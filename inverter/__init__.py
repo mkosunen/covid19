@@ -1,3 +1,23 @@
+"""
+========
+Inverter
+========
+
+Inverter model template The System Development Kit
+Used as a template for all TheSyDeKick Entities.
+
+Current docstring documentation style is Numpy
+https://numpydoc.readthedocs.io/en/latest/format.html
+
+This text here is to remind you that documentation is iportant.
+However, youu may find it out the even the documentation of this 
+entity may be outdated and incomplete. Regardless of that, every day 
+and in every way we are getting better and better :).
+
+Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 2017.
+
+"""
+
 import os
 import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
