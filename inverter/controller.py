@@ -19,12 +19,14 @@ class controller(verilog):
         self.time=0
         self.IOS=Bundle()
         self.IOS.Members['control_write']= IO()        #We use this for writing
-        _=verilog_iofile(self, name='control_write', dir='in', iotype='event')        
+        _=verilog_iofile(self, name='control_write', dir='in', iotype='event',
+                ionames=['initdone', 'reset'])        
         #Permanent pointer assignment to write io
         self.IOS.Members['control_write'].Data=self.iofile_bundle.Members['control_write']
  
-        self.IOS.Members['control_read']= IO()        #We use this for reading
-        _=verilog_iofile(self, name='control_read', dir='out', iotype='event', datatype='int')        
+        #self.IOS.Members['control_read']= IO()        #We use this for reading
+        #_=verilog_iofile(self, name='control_read', dir='out', iotype='event', datatype='int',
+        #        ionames=['initdone', 'reset'])        
 
         self.model='py';             #can be set externally, but is not propagated
         self.par= False              #By default, no parallel processing

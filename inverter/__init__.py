@@ -52,7 +52,7 @@ class inverter(verilog,thesdk):
         self.queue= []               # By default, no parallel processing
         self.IOS.Members['control_write']= IO() 
         # This is a placeholder, file is created elsewher
-        _=verilog_iofile(self, name='control_write', dir='in', iotype='file') 
+        #_=verilog_iofile(self, name='control_write', dir='in', iotype='file') 
         
         # No more bundles of files. No exceptions
         #Bundle of control input files
