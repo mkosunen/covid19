@@ -23,16 +23,14 @@ import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
     sys.path.append(os.path.abspath('../../thesdk'))
 
-import numpy as np
-import tempfile
-
 from thesdk import *
-from verilog import *
-from verilog.testbench import *
-from verilog.testbench import testbench as vtb
-from vhdl import *
+from rtl import *
+from rtl.testbench import *
+from rtl.testbench import testbench as vtb
 
-class inverter(verilog,thesdk):
+import numpy as np
+
+class inverter(rtl,thesdk):
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
@@ -42,26 +40,16 @@ class inverter(verilog,thesdk):
         self.proplist = [ 'Rs' ];    # Properties that can be propagated from parent
         self.Rs =  100e6;            # Sampling frequency
         self.IOS=Bundle()
-        self.IOS.Members['A']=IO() # Pointer for input data
-        _=verilog_iofile(self,name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
-        
-        self.IOS.Members['Z']= IO()
-        _= verilog_iofile(self,name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
+        self.IOS.Members['A']=IO()   # Pointer for input data
+        _=rtl_iofile(self,name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
+        self.IOS.Members['Z']= IO() # Pointer for input data
+        _= rtl_iofile(self,name='Z', dir='out', iotype='sample', ionames=['Z'])
         self.model='py';             # Can be set externally, but is not propagated
         self.par= False              # By default, no parallel processing
         self.queue= []               # By default, no parallel processing
         self.IOS.Members['control_write']= IO() 
         # This is a placeholder, file is created elsewher
         #_=verilog_iofile(self, name='control_write', dir='in', iotype='file') 
-        
-        # No more bundles of files. No exceptions
-        #Bundle of control input files
-        
-        #        name='control_write', 
-        #        dir='in',
-        #        iotype='file',
-        #        Data=Bundle() 
-        #        )        #Bundle of control input files
 
         if len(arg)>=1:
             parent=arg[0]
@@ -71,9 +59,7 @@ class inverter(verilog,thesdk):
         self.init()
 
     def init(self):
-        ### Lets fix this later on
-        if self.model=='vhdl':
-            self.print_log(type='F', msg='VHDL simulation is not supported with v1.2\n Use v1.1')
+        pass #Currently nohing to add
 
     def main(self):
         out=np.array(1-self.IOS.Members['A'].Data)
@@ -89,23 +75,26 @@ class inverter(verilog,thesdk):
             self.main()
         else: 
           if self.model=='sv':
-              self.vlogparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
-              self.run_verilog()
-                            
-              #This is for parallel processing
-              if self.par:
-                  self.queue.put(self.IOS.Members[Z].Data)
-              del self.iofile_bundle #Large files should be deleted
+              # Verilog simulation options here
+              self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
 
-          elif self.model=='vhdl':
-              self.print_log(type='F', msg='VHDL simulation is not supported with v1.2\n Use v1.1')
+          if self.model=='vhdl':
+              # VHDL simulation options here
+              self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
+          
+          #Running the RTL simulation
+          self.run_rtl()
 
-    #def define_io_conditions(self):
-    #    # Input A is read to verilog simulation after 'initdo' is set to 1 by controller
-    #    self.iofile_bundle.Members['A'].verilog_io_condition='initdone'
-    #    # Output is read to verilog simulation when all of the utputs are valid, 
-    #    # and after 'initdo' is set to 1 by controller
-    #    self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
+          if self.par:
+              self.queue.put(self.IOS.Members[Z].Data)
+          del self.iofile_bundle #Large files should be deleted
+
+    def define_io_conditions(self):
+        # Input A is read to verilog simulation after 'initdone' is set to 1 by controller
+        self.iofile_bundle.Members['A']._io_condition='initdone'
+        # Output is read to verilog simulation when all of the utputs are valid, 
+        # and after 'initdone' is set to 1 by controller
+        self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
 
 
 if __name__=="__main__":
@@ -122,9 +111,10 @@ if __name__=="__main__":
     #controller.step_time()
     controller.start_datafeed()
 
-    duts=[inverter() for i in range(2) ]
+    duts=[inverter() for i in range(3) ]
     duts[0].model='py'
     duts[1].model='sv'
+    duts[2].model='vhdl'
     for d in duts: 
         d.Rs=rs
         d.interactive_verilog=True
@@ -134,7 +124,7 @@ if __name__=="__main__":
         d.run()
 
     # Obs the latencies may be different
-    latency=[ 0 , 1 ]
+    latency=[ 0 , 1, 1 ]
     for k in range(len(duts)):
         figure=plt.figure()
         h=plt.subplot();
