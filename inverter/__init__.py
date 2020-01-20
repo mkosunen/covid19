@@ -45,24 +45,12 @@ class inverter(rtl,eldo,thesdk):
         self.vdd = 1.0
         self.IOS=Bundle()
         self.IOS.Members['A']=IO() # Pointer for input data
-        _=rtl_iofile(self, name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
-        _=eldo_iofile(self, name='A', dir='in', iotype='sample', ionames=['IN<0:0>'], rs=self.Rs, \
-                vhi=self.vdd, trise=1/(self.Rs*4), tfall=1/(self.Rs*4))
-            
         self.IOS.Members['Z']= IO()
-        _=rtl_iofile(self, name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
-        _=eldo_iofile(self, name='Z', dir='out', iotype='event', sourcetype='V', ionames=['OUT'])
-
-        # Saving the analog waveform of the input as well
-        self.IOS.Members['A_OUT']= IO()
-        _=eldo_iofile(self, name='A_OUT', dir='out', iotype='event', sourcetype='V', ionames=['IN<0>'])
-
-
         self.model='py';             # Can be set externally, but is not propagated
         self.par= False              # By default, no parallel processing
         self.queue= []               # By default, no parallel processing
         self.IOS.Members['control_write']= IO() 
-        # This is a placeholder, file is created elsewher
+        # File for control is created in controller
 
         if len(arg)>=1:
             parent=arg[0]
@@ -89,14 +77,25 @@ class inverter(rtl,eldo,thesdk):
         else: 
           if self.model=='sv':
               # Verilog simulation options here
+              _=rtl_iofile(self, name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
+              _=rtl_iofile(self, name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
               self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
               self.run_rtl()
           if self.model=='vhdl':
               # VHDL simulation options here
+              _=rtl_iofile(self, name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
+              _=rtl_iofile(self, name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
               self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
               self.run_rtl()
           
           elif self.model=='eldo':
+              _=eldo_iofile(self, name='A', dir='in', iotype='sample', ionames=['IN<0:0>'], rs=self.Rs, \
+                vhi=self.vdd, trise=1/(self.Rs*4), tfall=1/(self.Rs*4))
+              _=eldo_iofile(self, name='Z', dir='out', iotype='event', sourcetype='V', ionames=['OUT'])
+
+              # Saving the analog waveform of the input as well
+              self.IOS.Members['A_OUT']= IO()
+              _=eldo_iofile(self, name='A_OUT', dir='out', iotype='event', sourcetype='V', ionames=['IN<0>'])
               #self.preserve_iofiles = True
               #self.preserve_eldofiles = True
               #self.interactive_eldo = True
