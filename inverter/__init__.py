@@ -89,28 +89,28 @@ class inverter(rtl,eldo,thesdk):
               self.run_rtl()
           
           elif self.model=='eldo':
-              _=eldo_iofile(self, name='A', dir='in', iotype='sample', ionames=['IN<0:0>'], rs=self.Rs, \
+              _=eldo_iofile(self, name='A', dir='in', iotype='sample', ionames=['IN'], rs=self.Rs, \
                 vhi=self.vdd, trise=1/(self.Rs*4), tfall=1/(self.Rs*4))
               _=eldo_iofile(self, name='Z', dir='out', iotype='event', sourcetype='V', ionames=['OUT'])
 
               # Saving the analog waveform of the input as well
               self.IOS.Members['A_OUT']= IO()
-              _=eldo_iofile(self, name='A_OUT', dir='out', iotype='event', sourcetype='V', ionames=['IN<0>'])
+              _=eldo_iofile(self, name='A_OUT', dir='out', iotype='event', sourcetype='V', ionames=['IN'])
               #self.preserve_iofiles = True
               #self.preserve_eldofiles = True
               #self.interactive_eldo = True
-              self.nproc = 2
+              self.nproc = 1
               self.eldooptions = {
                           'eps': '1e-6'
                       }
               self.eldoparameters = {
                           'exampleparam': '0'
                       }
-              self.eldoplotextras = ['v(IN<0>)','v(OUT)']
+              self.eldoplotextras = ['v(IN)','v(OUT)']
 
               # Defining the ELDO netlist here manually, since no transistor models are provided
               # Normally the circuit is extracted from a source netlist file
-              self.eldomisc.append('INV0 IN<0> OUT vhi=%g vlo=0 vthi=%g vtlo=%g tpd=%g cin=%g' % \
+              self.eldomisc.append('INV0 IN OUT vhi=%g vlo=0 vthi=%g vtlo=%g tpd=%g cin=%g' % \
                       (self.vdd,self.vdd/2,self.vdd/2,100e-12,20e-15))
 
               # Example of defining supplies
@@ -150,11 +150,11 @@ if __name__=="__main__":
     #controller.step_time()
     controller.start_datafeed()
 
-    duts=[inverter() for i in range(4) ]
-    duts[0].model='py'
-    duts[1].model='sv'
-    duts[2].model='vhdl'
-    duts[3].model='eldo'
+    duts=[inverter() for i in range(1) ]
+    #duts[0].model='py'
+    #duts[1].model='sv'
+    #duts[2].model='vhdl'
+    duts[0].model='eldo'
     for d in duts: 
         d.Rs=rs
         #d.interactive_rtl=True
