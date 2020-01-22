@@ -63,12 +63,25 @@ class inverter(rtl,eldo,thesdk):
         pass #Currently nohing to add
 
     def main(self):
-        out=np.array(1-self.IOS.Members['A'].Data)
+        '''Guideline. Isolate python processing to main method.
+        
+        To isolate the interna processing from IO connection assigments, 
+        The procedure to follow is
+        1) Assign input data from input to local variable
+        2) Do the processing
+        3) Assign local variable to output
+
+        '''
+        inval=self.IOS.Members['A'].Data
+        out=np.array(1-inval)
         if self.par:
             self.queue.put(out)
         self.IOS.Members['Z'].Data=out
 
     def run(self,*arg):
+        '''Guideline: Define model depencies of executions in `run` method.
+
+        '''
         if len(arg)>0:
             self.par=True      #flag for parallel processing
             self.queue=arg[0]  #multiprocessing.queue as the first argument
@@ -125,12 +138,15 @@ class inverter(rtl,eldo,thesdk):
               self.queue.put(self.IOS.Members[Z].Data)
 
           #Delete large iofiles
-          del self.iofile_bundle #Large files should be deleted
+          del self.iofile_bundle 
 
     def define_io_conditions(self):
+        '''This overloads the method is called by run_rtl method. It defines the read/write conditions for the files
+
+        '''
         # Input A is read to verilog simulation after 'initdone' is set to 1 by controller
         self.iofile_bundle.Members['A']._io_condition='initdone'
-        # Output is read to verilog simulation when all of the utputs are valid, 
+        # Output is read to verilog simulation when all of the outputs are valid, 
         # and after 'initdone' is set to 1 by controller
         self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
 
