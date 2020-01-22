@@ -166,11 +166,11 @@ if __name__=="__main__":
     #controller.step_time()
     controller.start_datafeed()
 
-    duts=[inverter() for i in range(1) ]
-    #duts[0].model='py'
-    #duts[1].model='sv'
-    #duts[2].model='vhdl'
-    duts[0].model='eldo'
+    duts=[inverter() for i in range(4) ]
+    duts[0].model='py'
+    duts[1].model='sv'
+    duts[2].model='vhdl'
+    duts[3].model='eldo'
     for d in duts: 
         d.Rs=rs
         #d.interactive_rtl=True
@@ -191,29 +191,26 @@ if __name__=="__main__":
             axes[0].set_ylabel('Input', **hfont,fontsize=18);
             axes[1].set_ylabel('Output', **hfont,fontsize=18);
             axes[1].set_xlabel('Time (s)', **hfont,fontsize=18);
-            axes[0].set_xlim(0,20/rs)
-            axes[1].set_xlim(0,20/rs)
+            axes[0].set_xlim(0,11/rs)
+            axes[1].set_xlim(0,11/rs)
             axes[0].grid(True)
             axes[1].grid(True)
         else:
-            figure=plt.figure()
-            h=plt.subplot();
+            figure,axes=plt.subplots(2,1,sharex=True)
             x = np.linspace(0,10,11).reshape(-1,1)
-            markerline, stemlines, baseline = plt.stem(\
-                    x,indata[0:11,0],'-.'
-                )
-            markerline, stemlines, baseline = plt.stem(\
-                    x, duts[k].IOS.Members['Z'].Data[0+latency[k]:11+latency[k],0], '-.'
-                )
-            plt.setp(markerline,'markerfacecolor', 'b','linewidth',2)
-            plt.setp(stemlines, 'linestyle','solid','color','b', 'linewidth', 2)
-            plt.ylim(0, 1.1);
-            plt.xlim((np.amin(x), np.amax(x)));
-            plt.ylabel('Out', **hfont,fontsize=18);
-            plt.xlabel('Sample (n)', **hfont,fontsize=18);
-            h.tick_params(labelsize=14)
-        str = "Inverter model %s" %(duts[k].model) 
-        plt.suptitle(str,fontsize=20);
+            axes[0].stem(x,indata[0:11,0])
+            axes[0].set_ylim(0, 1.1);
+            axes[0].set_xlim((np.amin(x), np.amax(x)));
+            axes[0].set_ylabel('Input', **hfont,fontsize=18);
+            axes[0].grid(True)
+            axes[1].stem(x, duts[k].IOS.Members['Z'].Data[0+latency[k]:11+latency[k],0])
+            axes[1].set_ylim(0, 1.1);
+            axes[1].set_xlim((np.amin(x), np.amax(x)));
+            axes[1].set_ylabel('Output', **hfont,fontsize=18);
+            axes[1].set_xlabel('Sample (n)', **hfont,fontsize=18);
+            axes[1].grid(True)
+        titlestr = "Inverter model %s" %(duts[k].model) 
+        plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
         printstr="./inv_%s.eps" %(duts[k].model)
         plt.show(block=False);
