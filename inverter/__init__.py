@@ -121,12 +121,7 @@ class inverter(rtl,eldo,thesdk):
                       }
               self.eldoplotextras = ['v(IN)','v(OUT)']
 
-              # Defining the ELDO netlist here manually, since no transistor models are provided
-              # Normally the circuit is extracted from a source netlist file
-              self.eldomisc.append('INV0 IN OUT vhi=%g vlo=0 vthi=%g vtlo=%g tpd=%g cin=%g' % \
-                      (self.vdd,self.vdd/2,self.vdd/2,100e-12,20e-15))
-
-              # Example of defining supplies
+              # Example of defining supplies (not used here because the example inverter has no supplies)
               #_=eldo_dcsource(self,name='dd',value=self.vdd,pos='VDD',neg='VSS',extract=True,ext_start=2e-9)
               #_=eldo_dcsource(self,name='ss',value=0,pos='VSS',neg='0')
 
