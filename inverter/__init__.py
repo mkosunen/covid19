@@ -23,16 +23,17 @@ import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
     sys.path.append(os.path.abspath('../../thesdk'))
 
-import numpy as np
-import tempfile
-
 from thesdk import *
-from verilog import *
-from verilog.testbench import *
-from verilog.testbench import testbench as vtb
-from vhdl import *
+from rtl import *
+from rtl.testbench import *
+from rtl.testbench import testbench as vtb
+from eldo import *
+from eldo.testbench import *
+from eldo.testbench import testbench as etb 
 
-class inverter(verilog,thesdk):
+import numpy as np
+
+class inverter(rtl,eldo,thesdk):
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
@@ -41,27 +42,15 @@ class inverter(verilog,thesdk):
         self.print_log(type='I', msg='Inititalizing %s' %(__name__)) 
         self.proplist = [ 'Rs' ];    # Properties that can be propagated from parent
         self.Rs =  100e6;            # Sampling frequency
+        self.vdd = 1.0
         self.IOS=Bundle()
         self.IOS.Members['A']=IO() # Pointer for input data
-        _=verilog_iofile(self,name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
-        
         self.IOS.Members['Z']= IO()
-        _= verilog_iofile(self,name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
         self.model='py';             # Can be set externally, but is not propagated
         self.par= False              # By default, no parallel processing
         self.queue= []               # By default, no parallel processing
         self.IOS.Members['control_write']= IO() 
-        # This is a placeholder, file is created elsewher
-        _=verilog_iofile(self, name='control_write', dir='in', iotype='file') 
-        
-        # No more bundles of files. No exceptions
-        #Bundle of control input files
-        
-        #        name='control_write', 
-        #        dir='in',
-        #        iotype='file',
-        #        Data=Bundle() 
-        #        )        #Bundle of control input files
+        # File for control is created in controller
 
         if len(arg)>=1:
             parent=arg[0]
@@ -71,17 +60,28 @@ class inverter(verilog,thesdk):
         self.init()
 
     def init(self):
-        ### Lets fix this later on
-        if self.model=='vhdl':
-            self.print_log(type='F', msg='VHDL simulation is not supported with v1.2\n Use v1.1')
+        pass #Currently nohing to add
 
     def main(self):
-        out=np.array(1-self.IOS.Members['A'].Data)
+        '''Guideline. Isolate python processing to main method.
+        
+        To isolate the interna processing from IO connection assigments, 
+        The procedure to follow is
+        1) Assign input data from input to local variable
+        2) Do the processing
+        3) Assign local variable to output
+
+        '''
+        inval=self.IOS.Members['A'].Data
+        out=np.array(1-inval)
         if self.par:
             self.queue.put(out)
         self.IOS.Members['Z'].Data=out
 
     def run(self,*arg):
+        '''Guideline: Define model depencies of executions in `run` method.
+
+        '''
         if len(arg)>0:
             self.par=True      #flag for parallel processing
             self.queue=arg[0]  #multiprocessing.queue as the first argument
@@ -89,23 +89,66 @@ class inverter(verilog,thesdk):
             self.main()
         else: 
           if self.model=='sv':
-              self.vlogparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
-              self.run_verilog()
-                            
-              #This is for parallel processing
-              if self.par:
-                  self.queue.put(self.IOS.Members[Z].Data)
-              del self.iofile_bundle #Large files should be deleted
+              # Verilog simulation options here
+              _=rtl_iofile(self, name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
+              _=rtl_iofile(self, name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
+              self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
+              self.run_rtl()
+          if self.model=='vhdl':
+              # VHDL simulation options here
+              _=rtl_iofile(self, name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
+              _=rtl_iofile(self, name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
+              self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
+              self.run_rtl()
+          
+          elif self.model=='eldo':
+              _=eldo_iofile(self, name='A', dir='in', iotype='sample', ionames=['IN'], rs=self.Rs, \
+                vhi=self.vdd, trise=1/(self.Rs*4), tfall=1/(self.Rs*4))
+              _=eldo_iofile(self, name='Z', dir='out', iotype='event', sourcetype='V', ionames=['OUT'])
 
-          elif self.model=='vhdl':
-              self.print_log(type='F', msg='VHDL simulation is not supported with v1.2\n Use v1.1')
+              # Saving the analog waveform of the input as well
+              self.IOS.Members['A_OUT']= IO()
+              _=eldo_iofile(self, name='A_OUT', dir='out', iotype='event', sourcetype='V', ionames=['IN'])
+              #self.preserve_iofiles = True
+              #self.preserve_eldofiles = True
+              #self.interactive_eldo = True
+              self.nproc = 1
+              self.eldooptions = {
+                          'eps': '1e-6'
+                      }
+              self.eldoparameters = {
+                          'exampleparam': '0'
+                      }
+              self.eldoplotextras = ['v(IN)','v(OUT)']
 
-    #def define_io_conditions(self):
-    #    # Input A is read to verilog simulation after 'initdo' is set to 1 by controller
-    #    self.iofile_bundle.Members['A'].verilog_io_condition='initdone'
-    #    # Output is read to verilog simulation when all of the utputs are valid, 
-    #    # and after 'initdo' is set to 1 by controller
-    #    self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
+              # Defining the ELDO netlist here manually, since no transistor models are provided
+              # Normally the circuit is extracted from a source netlist file
+              self.eldomisc.append('INV0 IN OUT vhi=%g vlo=0 vthi=%g vtlo=%g tpd=%g cin=%g' % \
+                      (self.vdd,self.vdd/2,self.vdd/2,100e-12,20e-15))
+
+              # Example of defining supplies
+              #_=eldo_dcsource(self,name='dd',value=self.vdd,pos='VDD',neg='VSS',extract=True,ext_start=2e-9)
+              #_=eldo_dcsource(self,name='ss',value=0,pos='VSS',neg='0')
+
+              # Simulation command
+              _=eldo_simcmd(self,sim='tran')
+              self.run_eldo()
+
+          if self.par:
+              self.queue.put(self.IOS.Members[Z].Data)
+
+          #Delete large iofiles
+          del self.iofile_bundle 
+
+    def define_io_conditions(self):
+        '''This overloads the method is called by run_rtl method. It defines the read/write conditions for the files
+
+        '''
+        # Input A is read to verilog simulation after 'initdone' is set to 1 by controller
+        self.iofile_bundle.Members['A']._io_condition='initdone'
+        # Output is read to verilog simulation when all of the outputs are valid, 
+        # and after 'initdone' is set to 1 by controller
+        self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
 
 
 if __name__=="__main__":
@@ -116,45 +159,58 @@ if __name__=="__main__":
     length=1024
     rs=100e6
     indata=np.random.randint(2,size=length).reshape(-1,1);
+    #indata=np.random.randint(2,size=length)
     controller=inverter_controller()
     controller.Rs=rs
     #controller.reset()
     #controller.step_time()
     controller.start_datafeed()
 
-    duts=[inverter() for i in range(2) ]
+    duts=[inverter() for i in range(4) ]
     duts[0].model='py'
     duts[1].model='sv'
+    duts[2].model='vhdl'
+    duts[3].model='eldo'
     for d in duts: 
         d.Rs=rs
-        d.interactive_verilog=True
+        #d.interactive_rtl=True
+        #d.interactive_eldo=True
         d.IOS.Members['A'].Data=indata
         d.IOS.Members['control_write']=controller.IOS.Members['control_write']
         d.init()
         d.run()
 
     # Obs the latencies may be different
-    latency=[ 0 , 1 ]
+    latency=[ 0 , 1, 1, 0 ]
     for k in range(len(duts)):
-        figure=plt.figure()
-        h=plt.subplot();
         hfont = {'fontname':'Sans'}
-        x = np.linspace(0,10,11).reshape(-1,1)
-        markerline, stemlines, baseline = plt.stem(\
-                x,indata[0:11,0],'-.'
-            )
-        markerline, stemlines, baseline = plt.stem(\
-                x, duts[k].IOS.Members['Z'].Data[0+latency[k]:11+latency[k],0], '-.'
-            )
-        plt.setp(markerline,'markerfacecolor', 'b','linewidth',2)
-        plt.setp(stemlines, 'linestyle','solid','color','b', 'linewidth', 2)
-        plt.ylim(0, 1.1);
-        plt.xlim((np.amin(x), np.amax(x)));
-        str = "Inverter model %s" %(duts[k].model) 
-        plt.suptitle(str,fontsize=20);
-        plt.ylabel('Out', **hfont,fontsize=18);
-        plt.xlabel('Sample (n)', **hfont,fontsize=18);
-        h.tick_params(labelsize=14)
+        if duts[k].model == 'eldo':
+            figure,axes = plt.subplots(2,1,sharex=True)
+            axes[0].plot(duts[k].IOS.Members['A_OUT'].Data[:,0],duts[k].IOS.Members['A_OUT'].Data[:,1],label='Input')
+            axes[1].plot(duts[k].IOS.Members['Z'].Data[:,0],duts[k].IOS.Members['Z'].Data[:,1],label='Output')
+            axes[0].set_ylabel('Input', **hfont,fontsize=18);
+            axes[1].set_ylabel('Output', **hfont,fontsize=18);
+            axes[1].set_xlabel('Time (s)', **hfont,fontsize=18);
+            axes[0].set_xlim(0,11/rs)
+            axes[1].set_xlim(0,11/rs)
+            axes[0].grid(True)
+            axes[1].grid(True)
+        else:
+            figure,axes=plt.subplots(2,1,sharex=True)
+            x = np.linspace(0,10,11).reshape(-1,1)
+            axes[0].stem(x,indata[0:11,0])
+            axes[0].set_ylim(0, 1.1);
+            axes[0].set_xlim((np.amin(x), np.amax(x)));
+            axes[0].set_ylabel('Input', **hfont,fontsize=18);
+            axes[0].grid(True)
+            axes[1].stem(x, duts[k].IOS.Members['Z'].Data[0+latency[k]:11+latency[k],0])
+            axes[1].set_ylim(0, 1.1);
+            axes[1].set_xlim((np.amin(x), np.amax(x)));
+            axes[1].set_ylabel('Output', **hfont,fontsize=18);
+            axes[1].set_xlabel('Sample (n)', **hfont,fontsize=18);
+            axes[1].grid(True)
+        titlestr = "Inverter model %s" %(duts[k].model) 
+        plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
         printstr="./inv_%s.eps" %(duts[k].model)
         plt.show(block=False);

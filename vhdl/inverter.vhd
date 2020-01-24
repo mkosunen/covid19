@@ -1,23 +1,24 @@
 -- This is an inverter VHDL model
 -- Initially written by Marko Kosunen
--- Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 08.08.2017 11:41
-LIBRARY ieee;
-USE ieee.std_logic_1164.all;
-USE ieee.numeric_std.all;
-USE std.textio.all;
+-- Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 16.01.2020 15:51
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use std.textio.all;
 
 
-ENTITY inverter IS
-    PORT( A : IN  STD_LOGIC;
-          Z : OUT STD_LOGIC
+entity inverter is
+    port( reset : in std_logic;
+          A : in  std_logic;
+          Z : out std_logic
         );
-END inverter;
+end inverter;
 
-ARCHITECTURE rtl OF inverter IS
-BEGIN
-    invert:PROCESS(A)
-    BEGIN
+architecture rtl of inverter is
+begin
+    invert:process(A)
+    begin
         Z<=NOT A;
-    END PROCESS;
-END ARCHITECTURE;
+    end process;
+end architecture;
 
