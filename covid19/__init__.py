@@ -33,7 +33,7 @@ from eldo.testbench import testbench as etb
 
 import numpy as np
 
-class inverter(rtl,eldo,thesdk):
+class covid19(rtl,eldo,thesdk):
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
@@ -121,7 +121,7 @@ class inverter(rtl,eldo,thesdk):
                       }
               self.eldoplotextras = ['v(IN)','v(OUT)']
 
-              # Example of defining supplies (not used here because the example inverter has no supplies)
+              # Example of defining supplies (not used here because the example covid19 has no supplies)
               #_=eldo_dcsource(self,name='dd',value=self.vdd,pos='VDD',neg='VSS',extract=True,ext_start=2e-9)
               #_=eldo_dcsource(self,name='ss',value=0,pos='VSS',neg='0')
 
@@ -148,20 +148,20 @@ class inverter(rtl,eldo,thesdk):
 
 if __name__=="__main__":
     import matplotlib.pyplot as plt
-    from  inverter import *
-    from  inverter.controller import controller as inverter_controller
+    from  covid19 import *
+    from  covid19.controller import controller as covid19_controller
     import pdb
     length=1024
     rs=100e6
     indata=np.random.randint(2,size=length).reshape(-1,1);
     #indata=np.random.randint(2,size=length)
-    controller=inverter_controller()
+    controller=covid19_controller()
     controller.Rs=rs
     #controller.reset()
     #controller.step_time()
     controller.start_datafeed()
 
-    duts=[inverter() for i in range(4) ]
+    duts=[covid19() for i in range(4) ]
     duts[0].model='py'
     duts[1].model='sv'
     duts[2].model='vhdl'
