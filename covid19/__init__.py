@@ -31,6 +31,7 @@ class covid19(thesdk):
 
     def __init__(self,*arg): 
         self.print_log(type='I', msg='Inititalizing %s' %(__name__))
+        #self.proplist=['figtype']
         self_countries=['Finland']
         #if len(arg)>=1:
         #    parent=arg[0]
@@ -49,18 +50,25 @@ class covid19(thesdk):
         self._countries=val
         return self._countries
 
+
     @property
     def countrydata(self):
         if not hasattr(self,'_countrydata'):
             self._countrydata={key: country(name=key) for key in self.countries }
         return self._countrydata
+    @property
+    def figurepath(self):
+        self._figurepath=self.entitypath+'/Figures'
+        return self._figurepath
 
     def plot(self):
         hfont = {'fontname':'Sans'}
-        figure,axes = plt.subplots(2,1,sharex=True,figsize=(10,20))
+        figure,axes = plt.subplots(2,1,sharex=True,figsize=(10,12))
+        #figure,axes = plt.subplots(2,1,sharex=True)
         for key,val in self.countrydata.items():
-            axes[0].plot(val.relgrowthratefive,label=val.name)
-            axes[1].plot(val.active,label=val.name)
+            val.figtype=self.figtype
+            axes[0].plot(val.relgrowthratefive,label=val.name,linewidth=2)
+            axes[1].plot(val.active,label=val.name,linewidth=2)
             axes[0].set_ylabel("Relative growth,\n5-day avg", **hfont,fontsize=18);
             axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
             axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
@@ -74,9 +82,9 @@ class covid19(thesdk):
         titlestr = "Covid19 cases in selected coutries"
         plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
-        #printstr="./inv_%s.eps" %(duts[k].model)
+        printstr=self.figurepath+"/Covid19_Selected_cases."+self.figtype
         plt.show(block=False);
-        #figure.savefig(printstr, format='eps', dpi=300);
+        figure.savefig(printstr, format=self.figtype, dpi=300);
 
         for key,val in self.countrydata.items():
             val.plot()
@@ -118,6 +126,17 @@ class country(covid19):
     @property
     def name(self):
         return self._name
+    
+    @property
+    def figtype(self):
+        if not hasattr(self,'_figtype'):
+            self._figtype='eps'
+        return self._figtype
+
+    @figtype.setter
+    def figtype(self,val):
+            self._figtype=val
+
 
     @property
     def confirmed(self):
@@ -182,9 +201,10 @@ class country(covid19):
         titlestr = "Covid19 cases in %s" %(self.name)
         plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
-        #printstr="./inv_%s.eps" %(duts[k].model)
+        printstr=self.figurepath+"/Covid19_in_%s.%s" %(self.name,self.figtype)
         plt.show(block=False);
-        #figure.savefig(printstr, format='eps', dpi=300);
+        figure.savefig(printstr, format=self.figtype, dpi=300);
+        plt.show(block=False);
 
 
 
@@ -195,6 +215,7 @@ if __name__=="__main__":
 
     a=covid19()
     a.download()
+    a.figtype='png'
     a.countries=['Finland', 'Italy', 'Spain', 'Germany', 'Sweden', 'US', 'China', "Korea, South"]
     a.plot()
 
