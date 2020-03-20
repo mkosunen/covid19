@@ -194,7 +194,7 @@ if __name__=="__main__":
     import pdb
 
     a=covid19()
-
+    a.download()
     a.countries=['Finland', 'Italy', 'Spain', 'Germany', 'Sweden', 'US', 'China', "Korea, South"]
     a.plot()
 
