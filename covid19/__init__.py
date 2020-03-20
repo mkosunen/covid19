@@ -1,20 +1,14 @@
 """
 ========
-Inverter
+Covid19
 ========
 
-Inverter model template The System Development Kit
-Used as a template for all TheSyDeKick Entities.
+Covid19 modeling environment using TheSydeKick system modeling framework
 
 Current docstring documentation style is Numpy
 https://numpydoc.readthedocs.io/en/latest/format.html
 
-This text here is to remind you that documentation is iportant.
-However, youu may find it out the even the documentation of this 
-entity may be outdated and incomplete. Regardless of that, every day 
-and in every way we are getting better and better :).
-
-Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 2017.
+Initially written by Marko Kosunen, 2020.
 
 """
 
@@ -23,191 +17,186 @@ import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
     sys.path.append(os.path.abspath('../../thesdk'))
 
+import subprocess
+
 from thesdk import *
-from rtl import *
-from rtl.testbench import *
-from rtl.testbench import testbench as vtb
-from eldo import *
-from eldo.testbench import *
-from eldo.testbench import testbench as etb 
-
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
-class covid19(rtl,eldo,thesdk):
+class covid19(thesdk):
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
     def __init__(self,*arg): 
-        self.print_log(type='I', msg='Inititalizing %s' %(__name__)) 
-        self.proplist = [ 'Rs' ];    # Properties that can be propagated from parent
-        self.Rs =  100e6;            # Sampling frequency
-        self.vdd = 1.0
-        self.IOS=Bundle()
-        self.IOS.Members['A']=IO() # Pointer for input data
-        self.IOS.Members['Z']= IO()
-        self.model='py';             # Can be set externally, but is not propagated
-        self.par= False              # By default, no parallel processing
-        self.queue= []               # By default, no parallel processing
-        self.IOS.Members['control_write']= IO() 
-        # File for control is created in controller
+        self.print_log(type='I', msg='Inititalizing %s' %(__name__))
+        self_countries=['Finland']
+        #if len(arg)>=1:
+        #    parent=arg[0]
+        #    self.copy_propval(parent,self.proplist)
+        #    self.parent =parent;
+        ##self.init()
 
-        if len(arg)>=1:
-            parent=arg[0]
-            self.copy_propval(parent,self.proplist)
-            self.parent =parent;
+    @property
+    def countries(self):
+        if not hasattr(self,'_countries'):
+            self._countries=['Finland']
+        return self._countries
 
-        self.init()
+    @countries.setter
+    def countries(self,val):
+        self._countries=val
+        return self._countries
 
-    def init(self):
-        pass #Currently nohing to add
+    @property
+    def countrydata(self):
+        if not hasattr(self,'_countrydata'):
+            self._countrydata={key: country(name=key) for key in self.countries }
+        return self._countrydata
 
-    def main(self):
-        '''Guideline. Isolate python processing to main method.
-        
-        To isolate the interna processing from IO connection assigments, 
-        The procedure to follow is
-        1) Assign input data from input to local variable
-        2) Do the processing
-        3) Assign local variable to output
+    def plot(self):
+        hfont = {'fontname':'Sans'}
+        figure,axes = plt.subplots(2,1,sharex=True,figsize=(10,20))
+        for key,val in self.countrydata.items():
+            axes[0].plot(val.relgrowthratefive,label=val.name)
+            axes[1].plot(val.active,label=val.name)
+            axes[0].set_ylabel("Relative growth,\n5-day avg", **hfont,fontsize=18);
+            axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
+            axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
+            axes[0].set_xlim(0,val.active.size-1)
+            #axes[0].set_ylim(0,1)
+            axes[1].set_xlim(0,val.active.size-1)
+        axes[0].legend()
+        axes[1].legend()
+        axes[0].grid(True)
+        axes[1].grid(True)
+        titlestr = "Covid19 cases in selected coutries"
+        plt.suptitle(titlestr,fontsize=20);
+        plt.grid(True);
+        #printstr="./inv_%s.eps" %(duts[k].model)
+        plt.show(block=False);
+        #figure.savefig(printstr, format='eps', dpi=300);
 
-        '''
-        inval=self.IOS.Members['A'].Data
-        out=np.array(1-inval)
-        if self.par:
-            self.queue.put(out)
-        self.IOS.Members['Z'].Data=out
+        for key,val in self.countrydata.items():
+            val.plot()
 
-    def run(self,*arg):
-        '''Guideline: Define model depencies of executions in `run` method.
 
-        '''
-        if len(arg)>0:
-            self.par=True      #flag for parallel processing
-            self.queue=arg[0]  #multiprocessing.queue as the first argument
-        if self.model=='py':
-            self.main()
-        else: 
-          if self.model=='sv':
-              # Verilog simulation options here
-              _=rtl_iofile(self, name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
-              _=rtl_iofile(self, name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
-              self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
-              self.run_rtl()
-          if self.model=='vhdl':
-              # VHDL simulation options here
-              _=rtl_iofile(self, name='A', dir='in', iotype='sample', ionames=['A']) # IO file for input A
-              _=rtl_iofile(self, name='Z', dir='out', iotype='sample', ionames=['Z'], datatype='int')
-              self.rtlparameters=dict([ ('g_Rs',self.Rs),]) #Defines the sample rate
-              self.run_rtl()
-          
-          elif self.model=='eldo':
-              _=eldo_iofile(self, name='A', dir='in', iotype='sample', ionames=['IN'], rs=self.Rs, \
-                vhi=self.vdd, trise=1/(self.Rs*4), tfall=1/(self.Rs*4))
-              _=eldo_iofile(self, name='Z', dir='out', iotype='event', sourcetype='V', ionames=['OUT'])
+    @property
+    def databasefiles(self): 
+        self._databasefiles={ key : self.entitypath+'/database/'+key+'.csv' for key in [ 'Confirmed', 'Recovered', 'Deaths' ] }
+        return self._databasefiles
 
-              # Saving the analog waveform of the input as well
-              self.IOS.Members['A_OUT']= IO()
-              _=eldo_iofile(self, name='A_OUT', dir='out', iotype='event', sourcetype='V', ionames=['IN'])
-              #self.preserve_iofiles = True
-              #self.preserve_eldofiles = True
-              #self.interactive_eldo = True
-              self.nproc = 1
-              self.eldooptions = {
-                          'eps': '1e-6'
-                      }
-              self.eldoparameters = {
-                          'exampleparam': '0'
-                      }
-              self.eldoplotextras = ['v(IN)','v(OUT)']
+    @property
+    def _classfile(self):
+         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
-              # Example of defining supplies (not used here because the example covid19 has no supplies)
-              #_=eldo_dcsource(self,name='dd',value=self.vdd,pos='VDD',neg='VSS',extract=True,ext_start=2e-9)
-              #_=eldo_dcsource(self,name='ss',value=0,pos='VSS',neg='0')
+    def download(self):
+        '''Downloads the case databases from Johns Hopkins'''
 
-              # Simulation command
-              _=eldo_simcmd(self,sim='tran')
-              self.run_eldo()
+        for key,value in self.databasefiles.items():
+            command= 'wget "https://data.humdata.org/hxlproxy/api/data-preview.csv?url=https%3A%2F%2Fraw.githubusercontent.com%2FCSSEGISandData%2FCOVID-19%2Fmaster%2Fcsse_covid_19_data%2Fcsse_covid_19_time_series%2Ftime_series_19-covid-'+key+'.csv&filename=time_series_2019-ncov-'+key+'.csv" -O '+ value
+            print('Executing %s \n' %(command))
+            subprocess.check_output(command, shell=True);
 
-          if self.par:
-              self.queue.put(self.IOS.Members[Z].Data)
+    def read(self,**kwargs):
+        ''' Read by country '''
+        country=kwargs.get('country','Finland')
+        cases=kwargs.get('type','Confirmed')
+        fid=open(self.databasefiles[cases],'r')
+        readd = pd.read_csv(fid,dtype=object,sep=',',header=None)
+        dat=readd[readd[1].str.match(country)]
+        dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
+        return dat
 
-          #Delete large iofiles
-          del self.iofile_bundle 
+class country(covid19):
+    '''class for area data'''
 
-    def define_io_conditions(self):
-        '''This overloads the method is called by run_rtl method. It defines the read/write conditions for the files
+    def __init__(self,**kwargs):
+        self._name=kwargs.get('name','Finland')
+    
+    @property
+    def name(self):
+        return self._name
 
-        '''
-        # Input A is read to verilog simulation after 'initdone' is set to 1 by controller
-        self.iofile_bundle.Members['A']._io_condition='initdone'
-        # Output is read to verilog simulation when all of the outputs are valid, 
-        # and after 'initdone' is set to 1 by controller
-        self.iofile_bundle.Members['Z'].verilog_io_condition_append(cond='&& initdone')
+    @property
+    def confirmed(self):
+        if not hasattr(self,'_confirmed'):
+            self._confirmed=self.read(country=self._name,type='Confirmed')
+        return self._confirmed
+
+    @property
+    def recovered(self):
+        if not hasattr(self,'_recovered'):
+            self._recovered=self.read(country=self._name,type='Recovered')
+        return self._recovered
+
+    @property
+    def deaths(self):
+        if not hasattr(self,'_deaths'):
+            self._deaths=self.read(country=self._name,type='Deaths')
+        return self._deaths
+
+    @property
+    def relgrowthrate(self):
+        zs=np.where(self.active==0)
+        relact=self.active
+        relact[zs]=1
+        if not hasattr(self,'_relgrowthrate'):
+            self._relgrowthrate=np.diff(np.r_[ 0, self.confirmed])/relact
+        return self._relgrowthrate
+
+    @property
+    def relgrowthratefive(self):
+        zs=np.where(self.active==0)
+        relact=self.active
+        relact[zs]=1
+        d=np.diff(np.r_[ 0, self.confirmed])
+        filt=np.ones((1,5))[0,:]
+        awgd=(np.convolve(filt,d/relact))[0:-4]/filt.size
+        if not hasattr(self,'_relgrowthratefove'):
+            self._relgrowthratefive=awgd
+        return self._relgrowthratefive
+
+    @property
+    def active(self):
+        if not hasattr(self,'_active'):
+            self._active=self.confirmed-self.recovered-self.deaths
+        return self._active
+
+    def plot(self):
+        hfont = {'fontname':'Sans'}
+        figure,axes = plt.subplots(2,1,sharex=True)
+        axes[0].plot(self.relgrowthrate,label='Relative growth')
+        axes[0].plot(self.relgrowthratefive,label='5-day average')
+        axes[1].plot(self.active,label='Active cases')
+        axes[0].set_ylabel('Relative growth', **hfont,fontsize=18);
+        axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
+        axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
+        axes[0].legend()
+        axes[0].set_xlim(0,self.active.size-1)
+        axes[0].set_xlim(0,1)
+        axes[1].set_xlim(0,self.active.size-1)
+        axes[0].grid(True)
+        axes[1].grid(True)
+        titlestr = "Covid19 cases in %s" %(self.name)
+        plt.suptitle(titlestr,fontsize=20);
+        plt.grid(True);
+        #printstr="./inv_%s.eps" %(duts[k].model)
+        plt.show(block=False);
+        #figure.savefig(printstr, format='eps', dpi=300);
+
 
 
 if __name__=="__main__":
-    import matplotlib.pyplot as plt
     from  covid19 import *
-    from  covid19.controller import controller as covid19_controller
+    from covid19 import country as co
     import pdb
-    length=1024
-    rs=100e6
-    indata=np.random.randint(2,size=length).reshape(-1,1);
-    #indata=np.random.randint(2,size=length)
-    controller=covid19_controller()
-    controller.Rs=rs
-    #controller.reset()
-    #controller.step_time()
-    controller.start_datafeed()
 
-    duts=[covid19() for i in range(4) ]
-    duts[0].model='py'
-    duts[1].model='sv'
-    duts[2].model='vhdl'
-    duts[3].model='eldo'
-    for d in duts: 
-        d.Rs=rs
-        #d.interactive_rtl=True
-        #d.interactive_eldo=True
-        d.IOS.Members['A'].Data=indata
-        d.IOS.Members['control_write']=controller.IOS.Members['control_write']
-        d.init()
-        d.run()
+    a=covid19()
 
-    # Obs the latencies may be different
-    latency=[ 0 , 1, 1, 0 ]
-    for k in range(len(duts)):
-        hfont = {'fontname':'Sans'}
-        if duts[k].model == 'eldo':
-            figure,axes = plt.subplots(2,1,sharex=True)
-            axes[0].plot(duts[k].IOS.Members['A_OUT'].Data[:,0],duts[k].IOS.Members['A_OUT'].Data[:,1],label='Input')
-            axes[1].plot(duts[k].IOS.Members['Z'].Data[:,0],duts[k].IOS.Members['Z'].Data[:,1],label='Output')
-            axes[0].set_ylabel('Input', **hfont,fontsize=18);
-            axes[1].set_ylabel('Output', **hfont,fontsize=18);
-            axes[1].set_xlabel('Time (s)', **hfont,fontsize=18);
-            axes[0].set_xlim(0,11/rs)
-            axes[1].set_xlim(0,11/rs)
-            axes[0].grid(True)
-            axes[1].grid(True)
-        else:
-            figure,axes=plt.subplots(2,1,sharex=True)
-            x = np.linspace(0,10,11).reshape(-1,1)
-            axes[0].stem(x,indata[0:11,0])
-            axes[0].set_ylim(0, 1.1);
-            axes[0].set_xlim((np.amin(x), np.amax(x)));
-            axes[0].set_ylabel('Input', **hfont,fontsize=18);
-            axes[0].grid(True)
-            axes[1].stem(x, duts[k].IOS.Members['Z'].Data[0+latency[k]:11+latency[k],0])
-            axes[1].set_ylim(0, 1.1);
-            axes[1].set_xlim((np.amin(x), np.amax(x)));
-            axes[1].set_ylabel('Output', **hfont,fontsize=18);
-            axes[1].set_xlabel('Sample (n)', **hfont,fontsize=18);
-            axes[1].grid(True)
-        titlestr = "Inverter model %s" %(duts[k].model) 
-        plt.suptitle(titlestr,fontsize=20);
-        plt.grid(True);
-        printstr="./inv_%s.eps" %(duts[k].model)
-        plt.show(block=False);
-        figure.savefig(printstr, format='eps', dpi=300);
+    a.countries=['Finland', 'Italy', 'Spain', 'Germany', 'Sweden', 'US', 'China', "Korea, South"]
+    a.plot()
+
     input()
+

@@ -13,20 +13,13 @@ echo "Generating Makefile"
 
 cat << EOF > ${THISDIR}/Makefile
 
-#.PHONY: all sim chisel clean
 .PHONY: all sim doc clean
 
-#all: chisel sim
-all: sim doc
+all: sim
 
-#sim: chisel
 sim:
 	cd ${THISDIR}/${MODULE} && \\
 	${PYL} __init__.py
-
-#chisel:
-#	cd $THISDIR/chisel && \\
-#	make
 
 doc:
 	cd $THISDIR/doc && \\
