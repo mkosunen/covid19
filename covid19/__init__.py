@@ -40,6 +40,16 @@ class covid19(thesdk):
         ##self.init()
 
     @property
+    def punchline(self):
+        if not hasattr(self,'_punchline'):
+            self._punchline="\nCovid cases in %s"
+        return self._punchline
+
+    @punchline.setter
+    def punchline(self,val):
+        self._punchline=val
+        return self._punchline
+    @property
     def countries(self):
         if not hasattr(self,'_countries'):
             self._countries=['Finland']
@@ -49,6 +59,18 @@ class covid19(thesdk):
     def countries(self,val):
         self._countries=val
         return self._countries
+
+    @property
+    def declinelevel(self):
+        if not hasattr(self,'_declinelevel'):
+            self._declinelevel=0.1
+        return self._declinelevel
+
+    @declinelevel.setter
+    def declinelevel(self,val):
+        self._declinelevel=val
+        return self._declinelevel
+
 
 
     @property
@@ -65,11 +87,13 @@ class covid19(thesdk):
         hfont = {'fontname':'Sans'}
         figure,axes = plt.subplots(2,1,sharex=True,figsize=(10,12))
         #figure,axes = plt.subplots(2,1,sharex=True)
+        refline=np.ones(list(self.countrydata.values())[0].relgrowthrate.size)*self.declinelevel
+        axes[0].plot(refline,linewidth=3,color='g')
         for key,val in self.countrydata.items():
             val.figtype=self.figtype
             axes[0].plot(val.relgrowthratefive,label=val.name,linewidth=2)
             axes[1].plot(val.active,label=val.name,linewidth=2)
-            axes[0].set_ylabel("Relative growth,\n5-day avg", **hfont,fontsize=18);
+            axes[0].set_ylabel("Relative growth\n5-day avg", **hfont,fontsize=18);
             axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
             axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
             axes[0].set_xlim(0,val.active.size-1)
@@ -79,7 +103,8 @@ class covid19(thesdk):
         axes[1].legend()
         axes[0].grid(True)
         axes[1].grid(True)
-        titlestr = "Covid19 cases in selected coutries"
+        titlestr = self.punchline %('selected countries')
+        plt.subplots_adjust(top=0.8)
         plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
         printstr=self.figurepath+"/Covid19_Selected_cases."+self.figtype
@@ -186,7 +211,9 @@ class country(covid19):
     def plot(self):
         hfont = {'fontname':'Sans'}
         figure,axes = plt.subplots(2,1,sharex=True)
-        axes[0].plot(self.relgrowthrate,label='Relative growth')
+        refline=np.ones(list(self.countrydata.values())[0].relgrowthrate.size)*self.declinelevel
+        axes[0].plot(refline,linewidth=3,color='g')
+        axes[0].plot(self.relgrowthrate,label="Relative growth")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
         axes[1].plot(self.active,label='Active cases')
         axes[0].set_ylabel('Relative growth', **hfont,fontsize=18);
@@ -198,7 +225,8 @@ class country(covid19):
         axes[1].set_xlim(0,self.active.size-1)
         axes[0].grid(True)
         axes[1].grid(True)
-        titlestr = "Covid19 cases in %s" %(self.name)
+        titlestr = self.punchline %(self.name)
+        plt.subplots_adjust(top=0.8)
         plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
         printstr=self.figurepath+"/Covid19_in_%s.%s" %(self.name,self.figtype)
