@@ -97,9 +97,9 @@ class covid19(thesdk):
             axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
             axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
             axes[0].set_xlim(0,val.active.size-1)
-            #axes[0].set_ylim(0,1)
             axes[1].set_xlim(0,val.active.size-1)
         axes[0].legend()
+        axes[0].set_ylim(0,1)
         axes[1].legend()
         axes[0].grid(True)
         axes[1].grid(True)
@@ -183,8 +183,9 @@ class country(covid19):
 
     @property
     def relgrowthrate(self):
-        zs=np.where(self.active==0)
-        relact=self.active
+        prevact=np.r_[0,self.active[0:-1]]
+        zs=np.where(prevact==0)
+        relact=prevact
         relact[zs]=1
         if not hasattr(self,'_relgrowthrate'):
             self._relgrowthrate=np.diff(np.r_[ 0, self.confirmed])/relact
@@ -192,8 +193,9 @@ class country(covid19):
 
     @property
     def relgrowthratefive(self):
-        zs=np.where(self.active==0)
-        relact=self.active
+        prevact=np.r_[0,self.active[0:-1]]
+        zs=np.where(prevact==0)
+        relact=prevact
         relact[zs]=1
         d=np.diff(np.r_[ 0, self.confirmed])
         filt=np.ones((1,5))[0,:]
@@ -215,13 +217,13 @@ class country(covid19):
         axes[0].plot(refline,linewidth=3,color='g')
         axes[0].plot(self.relgrowthrate,label="Relative growth")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
-        axes[1].plot(self.active,label='Active cases')
+        axes[1].plot(self.active,label='Ative cases')
         axes[0].set_ylabel('Relative growth', **hfont,fontsize=18);
         axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
         axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
         axes[0].legend()
         axes[0].set_xlim(0,self.active.size-1)
-        axes[0].set_xlim(0,1)
+        axes[0].set_ylim(0,1)
         axes[1].set_xlim(0,self.active.size-1)
         axes[0].grid(True)
         axes[1].grid(True)
@@ -244,6 +246,7 @@ if __name__=="__main__":
     a=covid19()
     a.download()
     a.figtype='png'
+    #print(a.countrydata['Finland'].active)
     a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
     a.plot()
 
