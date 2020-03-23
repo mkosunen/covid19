@@ -244,7 +244,7 @@ if __name__=="__main__":
     a=covid19()
     a.download()
     a.figtype='png'
-    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'US', 'China', "Korea, South"]
+    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
     a.plot()
 
     input()
