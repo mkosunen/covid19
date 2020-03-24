@@ -139,6 +139,7 @@ class covid19(thesdk):
         fid=open(self.databasefiles[cases],'r')
         readd = pd.read_csv(fid,dtype=object,sep=',',header=None)
         dat=readd[readd[1].str.match(country)]
+        print(country)
         dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
         return dat
 
@@ -247,7 +248,8 @@ if __name__=="__main__":
     a.download()
     a.figtype='png'
     #print(a.countrydata['Finland'].active)
-    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
+    #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
+    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
     a.plot()
 
     input()
