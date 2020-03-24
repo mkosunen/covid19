@@ -114,6 +114,12 @@ class covid19(thesdk):
         for key,val in self.countrydata.items():
             val.plot()
 
+    def plot_estimated_recovery_times(self):
+        for key,val in self.countrydata.items():
+            val.figtype=self.figtype
+            val.plot_estimated_recovery_time()
+
+
 
     @property
     def databasefiles(self): 
@@ -211,6 +217,51 @@ class country(covid19):
             self._active=self.confirmed-self.recovered-self.deaths
         return self._active
 
+    def estimate_recovery_time(self):
+        country=self.name
+        files={'Confirmed': self.entitypath+"/database/Confirmed.csv.backup_23.3.2020",
+                'Deaths': self.entitypath+"/database/Deaths.csv.backup_23.3.2020",
+                'Recovered': self.entitypath+"/database/Recovered.csv.backup_23.3.2020"}
+
+        Data={}
+        for key,file in files.items():
+            fid=open(file,'r')
+            dat1 = pd.read_csv(fid,dtype=object,sep=',',header=None)
+            dat2 = dat1[dat1[1].str.match(country)]
+            Data[key]=np.sum(np.array(dat2.values[:,4:-1].astype('int')),axis=0)
+
+        Data['Active']= Data['Confirmed']-Data['Deaths']-Data['Recovered']
+        #for i in range(5,26):
+        Data['Error']=[]
+        Data['Estimated']={}
+        for i in range(10,25):
+            filt=np.ones((1,i))[0,:]
+            Data['Estimated'][i]=np.convolve(filt,np.diff(np.r_[0, (Data['Confirmed']-Data['Deaths'])]))[0:-(i-1)]
+            errorvar=np.sum((Data['Active']-Data['Estimated'][i])**2)/len(Data['Active']-1)
+            Data['Error'].append((i,errorvar))
+        mindata=min(Data['Error'], key = lambda t : t[1])
+        self.estimated_recovery_data=Data
+        self.estimated_recovery_time=mindata
+
+    def plot_estimated_recovery_time(self):
+        self.estimate_recovery_time()
+        hfont = {'fontname':'Sans'}
+        figure,axes = plt.subplots()
+        #figure,axes = plt.subplots(2,1,sharex=True)
+        axes.plot(self.estimated_recovery_data['Estimated'][self.estimated_recovery_time[0]],linewidth=2,label='Estimated')
+        axes.plot(self.estimated_recovery_data['Active'],linewidth=2,label='Reported')
+        titlestr = "Active cases in %s \n Best fit recovery time %s days" %(self.name,self.estimated_recovery_time[0])
+        axes.set_ylabel('Active cases' , **hfont,fontsize=18);
+        axes.set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
+        axes.legend()
+        axes.grid(True)
+        plt.suptitle(titlestr,fontsize=20);
+        plt.grid(True);
+        plt.subplots_adjust(top=0.8)
+        printstr=self.figurepath+"/Covid19_Recovery_in_%s.%s" %(self.name,self.figtype)
+        plt.show(block=False);
+        figure.savefig(printstr, format=self.figtype, dpi=300);
+
     def plot(self):
         hfont = {'fontname':'Sans'}
         figure,axes = plt.subplots(2,1,sharex=True)
@@ -248,9 +299,10 @@ if __name__=="__main__":
     a.download()
     a.figtype='png'
     #print(a.countrydata['Finland'].active)
-    #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
-    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
-    a.plot()
+    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
+    #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
+    #a.plot()
+    a.plot_estimated_recovery_times()
 
     input()
 
