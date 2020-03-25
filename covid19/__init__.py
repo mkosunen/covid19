@@ -112,6 +112,7 @@ class covid19(thesdk):
         plt.subplots_adjust(top=0.8)
         plt.subplots_adjust(left=0.2)
         plt.suptitle(titlestr,fontsize=20);
+        #plt.subplots_adjust(hspace=0.4)
         plt.grid(True);
         printstr=self.figurepath+"/Covid19_Selected_cases."+self.figtype
         plt.show(block=False);
@@ -156,7 +157,7 @@ class covid19(thesdk):
         return dat
 
 class country(covid19):
-    '''class for area data'''
+    '''Class for country data'''
 
     def __init__(self,**kwargs):
         self._name=kwargs.get('name','Finland')
@@ -188,7 +189,7 @@ class country(covid19):
             country=self.name
             i=self.recovery_time
             filt=np.ones((1,i))[0,:]
-            self._recovered=self.confirmed-np.convolve(filt,np.diff(np.r_[0, (self.confirmed-self.deaths)]))[0:-(i-1)]
+            self._recovered=self.confirmed-self.deaths-self.active
         return self._recovered
 
     @property
@@ -219,6 +220,12 @@ class country(covid19):
         if not hasattr(self,'_relgrowthratefove'):
             self._relgrowthratefive=awgd
         return self._relgrowthratefive
+
+    @property
+    def growth(self):
+        if not hasattr(self,'_growth'):
+            self._growth=np.diff(np.r_[0, (self.confirmed-self.deaths)])
+        return self._growth
 
     @property
     def active(self):
@@ -276,25 +283,31 @@ class country(covid19):
 
     def plot(self):
         hfont = {'fontname':'Sans'}
-        figure,axes = plt.subplots(2,1,sharex=True)
+        figure,axes = plt.subplots(3,1,sharex=False,figsize=(6,7))
         refline=np.ones(list(self.countrydata.values())[0].relgrowthrate.size)*self.declinelevel
         axes[0].plot(refline,linewidth=3,color='g')
         axes[0].plot(self.relgrowthrate,label="Relative growth")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
         axes[1].plot(self.active,label='Active cases')
+        axes[2].plot([i for i in range(-self.recovery_time+1,1)],self.growth[-self.recovery_time:],label='Growth')
+        axes[1].axvline(self.active.shape[0]-self.recovery_time,linestyle='dashed', color='c',label='Recovery limit')
+        axes[0].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
         axes[0].set_ylabel('Relative growth', **hfont,fontsize=18);
-        #axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
         axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
         axes[1].set_ylabel('Active cases\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
+        axes[2].set_xlabel('Active period', **hfont,fontsize=18);
+        axes[2].set_ylabel('Daily growth\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[0].legend()
+        axes[1].legend()
         axes[0].set_xlim(0,self.active.size-1)
         axes[0].set_ylim(0,1)
         axes[1].set_xlim(0,self.active.size-1)
-        #axes[1].set_ylim(0,max(self.active))
+        axes[2].set_xlim(-self.recovery_time+1,0)
         axes[0].grid(True)
         axes[1].grid(True)
         titlestr = self.punchline %(self.name)
-        plt.subplots_adjust(top=0.8)
+        #plt.subplots_adjust(top=0.8,hspace=0.4)
+        plt.subplots_adjust(hspace=0.4)
         plt.subplots_adjust(left=0.2)
         plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
@@ -303,11 +316,8 @@ class country(covid19):
         figure.savefig(printstr, format=self.figtype, dpi=300);
         plt.show(block=False);
 
-
-
 if __name__=="__main__":
     from  covid19 import *
-    from covid19 import country as co
     import pdb
 
     a=covid19()
