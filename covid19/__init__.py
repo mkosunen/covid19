@@ -45,10 +45,17 @@ class covid19(thesdk):
             self._punchline="\nCovid cases in %s"
         return self._punchline
 
+    @property
+    def recovery_time(self):
+        if not hasattr(self,'_recovery_time'):
+            self._recovery_time=17
+        return self._recovery_time
+
     @punchline.setter
     def punchline(self,val):
         self._punchline=val
         return self._punchline
+
     @property
     def countries(self):
         if not hasattr(self,'_countries'):
@@ -71,8 +78,6 @@ class covid19(thesdk):
         self._declinelevel=val
         return self._declinelevel
 
-
-
     @property
     def countrydata(self):
         if not hasattr(self,'_countrydata'):
@@ -94,7 +99,7 @@ class covid19(thesdk):
             axes[0].plot(val.relgrowthratefive,label=val.name,linewidth=2)
             axes[1].plot(val.active,label=val.name,linewidth=2)
             axes[0].set_ylabel("Relative growth\n5-day avg", **hfont,fontsize=18);
-            axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
+            axes[1].set_ylabel('Active cases\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
             axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
             axes[0].set_xlim(0,val.active.size-1)
             axes[1].set_xlim(0,val.active.size-1)
@@ -105,6 +110,7 @@ class covid19(thesdk):
         axes[1].grid(True)
         titlestr = self.punchline %('selected countries')
         plt.subplots_adjust(top=0.8)
+        plt.subplots_adjust(left=0.2)
         plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
         printstr=self.figurepath+"/Covid19_Selected_cases."+self.figtype
@@ -129,14 +135,15 @@ class covid19(thesdk):
     @property
     def _classfile(self):
          return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-
     def download(self):
-        '''Downloads the case databases from Johns Hopkins'''
-
+        '''Downloads the case databases'''
         for key,value in self.databasefiles.items():
-            command= 'wget "https://data.humdata.org/hxlproxy/api/data-preview.csv?url=https%3A%2F%2Fraw.githubusercontent.com%2FCSSEGISandData%2FCOVID-19%2Fmaster%2Fcsse_covid_19_data%2Fcsse_covid_19_time_series%2Ftime_series_19-covid-'+key+'.csv&filename=time_series_2019-ncov-'+key+'.csv" -O '+ value
-            print('Executing %s \n' %(command))
-            subprocess.check_output(command, shell=True);
+            #command= 'wget "https://data.humdata.org/hxlproxy/api/data-preview.csv?url=https%3A%2F%2Fraw.githubusercontent.com%2FCSSEGISandData%2FCOVID-19%2Fmaster
+            #%2Fcsse_covid_19_data%2Fcsse_covid_19_time_series%2Ftime_series_19-covid-'+key+'.csv&filename=time_series_2019-ncov-'+key+'.csv" -O '+ value
+            if key is not 'Recovered' :
+                command= 'wget "https://raw.github.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
+                self.print_log(type='I', msg='Executing %s \n' %(command))
+                subprocess.check_output(command, shell=True);
 
     def read(self,**kwargs):
         ''' Read by country '''
@@ -145,7 +152,6 @@ class covid19(thesdk):
         fid=open(self.databasefiles[cases],'r')
         readd = pd.read_csv(fid,dtype=object,sep=',',header=None)
         dat=readd[readd[1].str.match(country)]
-        print(country)
         dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
         return dat
 
@@ -179,7 +185,10 @@ class country(covid19):
     @property
     def recovered(self):
         if not hasattr(self,'_recovered'):
-            self._recovered=self.read(country=self._name,type='Recovered')
+            country=self.name
+            i=self.recovery_time
+            filt=np.ones((1,i))[0,:]
+            self._recovered=self.confirmed-np.convolve(filt,np.diff(np.r_[0, (self.confirmed-self.deaths)]))[0:-(i-1)]
         return self._recovered
 
     @property
@@ -237,7 +246,7 @@ class country(covid19):
         for i in range(10,25):
             filt=np.ones((1,i))[0,:]
             Data['Estimated'][i]=np.convolve(filt,np.diff(np.r_[0, (Data['Confirmed']-Data['Deaths'])]))[0:-(i-1)]
-            errorvar=np.sum((Data['Active']-Data['Estimated'][i])**2)/len(Data['Active']-1)
+            errorvar=np.sum((np.log(Data['Active'])-np.log(Data['Estimated'][i])**2))/len(Data['Active']-1)
             Data['Error'].append((i,errorvar))
         mindata=min(Data['Error'], key = lambda t : t[1])
         self.estimated_recovery_data=Data
@@ -269,18 +278,21 @@ class country(covid19):
         axes[0].plot(refline,linewidth=3,color='g')
         axes[0].plot(self.relgrowthrate,label="Relative growth")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
-        axes[1].plot(self.active,label='Ative cases')
+        axes[1].plot(self.active,label='Active cases')
         axes[0].set_ylabel('Relative growth', **hfont,fontsize=18);
-        axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
+        #axes[1].set_ylabel('Active cases', **hfont,fontsize=18);
         axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
+        axes[1].set_ylabel('Active cases\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[0].legend()
         axes[0].set_xlim(0,self.active.size-1)
         axes[0].set_ylim(0,1)
         axes[1].set_xlim(0,self.active.size-1)
+        #axes[1].set_ylim(0,max(self.active))
         axes[0].grid(True)
         axes[1].grid(True)
         titlestr = self.punchline %(self.name)
         plt.subplots_adjust(top=0.8)
+        plt.subplots_adjust(left=0.2)
         plt.suptitle(titlestr,fontsize=20);
         plt.grid(True);
         printstr=self.figurepath+"/Covid19_in_%s.%s" %(self.name,self.figtype)
@@ -300,9 +312,10 @@ if __name__=="__main__":
     a.figtype='png'
     #print(a.countrydata['Finland'].active)
     a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
+    #a.countries=['Finland' ]
     #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
-    #a.plot()
-    a.plot_estimated_recovery_times()
+    a.plot()
+    #a.plot_estimated_recovery_times()
 
     input()
 
