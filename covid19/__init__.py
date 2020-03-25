@@ -223,7 +223,10 @@ class country(covid19):
     @property
     def active(self):
         if not hasattr(self,'_active'):
-            self._active=self.confirmed-self.recovered-self.deaths
+            country=self.name
+            i=self.recovery_time
+            filt=np.ones((1,i))[0,:]
+            self._active=np.convolve(filt,np.diff(np.r_[0, (self.confirmed-self.deaths)]))[0:-(i-1)]
         return self._active
 
     def estimate_recovery_time(self):
