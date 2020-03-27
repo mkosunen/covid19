@@ -283,13 +283,14 @@ class country(covid19):
 
     def plot(self):
         hfont = {'fontname':'Sans'}
-        figure,axes = plt.subplots(3,1,sharex=False,figsize=(6,7))
+        figure,axes = plt.subplots(4,1,sharex=False,figsize=(6,10))
         refline=np.ones(list(self.countrydata.values())[0].relgrowthrate.size)*self.declinelevel
         axes[0].plot(refline,linewidth=3,color='g')
         axes[0].plot(self.relgrowthrate,label="Relative growth")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
         axes[1].plot(self.active,label='Active cases')
         axes[2].plot([i for i in range(-self.recovery_time+1,1)],self.growth[-self.recovery_time:],label='Growth')
+        axes[3].plot([i for i in range(-self.recovery_time+1,1)],self.relgrowthrate[-self.recovery_time:],label='Relative Growth')
         axes[1].axvline(self.active.shape[0]-self.recovery_time,linestyle='dashed', color='c',label='Recovery limit')
         axes[0].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
         axes[0].set_ylabel('Relative growth', **hfont,fontsize=18);
@@ -297,14 +298,20 @@ class country(covid19):
         axes[1].set_ylabel('Active cases\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[2].set_xlabel('Active period', **hfont,fontsize=18);
         axes[2].set_ylabel('Daily growth\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
+        axes[3].set_xlabel('Active period', **hfont,fontsize=18);
+        axes[3].set_ylabel('Relative growth\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[0].legend()
         axes[1].legend()
         axes[0].set_xlim(0,self.active.size-1)
         axes[0].set_ylim(0,1)
         axes[1].set_xlim(0,self.active.size-1)
         axes[2].set_xlim(-self.recovery_time+1,0)
+        axes[3].set_xlim(-self.recovery_time+1,0)
+        axes[3].set_ylim(0,0.4)
         axes[0].grid(True)
         axes[1].grid(True)
+        axes[2].grid(True)
+        axes[3].grid(True)
         titlestr = self.punchline %(self.name)
         #plt.subplots_adjust(top=0.8,hspace=0.4)
         plt.subplots_adjust(hspace=0.4)
