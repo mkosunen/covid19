@@ -93,7 +93,7 @@ class covid19(thesdk):
         figure,axes = plt.subplots(2,1,sharex=True,figsize=(10,12))
         #figure,axes = plt.subplots(2,1,sharex=True)
         refline=np.ones(list(self.countrydata.values())[0].relgrowthrate.size)*self.declinelevel
-        axes[0].plot(refline,linewidth=3,color='g')
+        #axes[0].plot(refline,linewidth=3,color='g')
         for key,val in self.countrydata.items():
             val.figtype=self.figtype
             axes[0].plot(val.relgrowthratefive,label=val.name,linewidth=2)
@@ -285,7 +285,7 @@ class country(covid19):
         hfont = {'fontname':'Sans'}
         figure,axes = plt.subplots(4,1,sharex=False,figsize=(6,10))
         refline=np.ones(list(self.countrydata.values())[0].relgrowthrate.size)*self.declinelevel
-        axes[0].plot(refline,linewidth=3,color='g')
+        #axes[0].plot(refline,linewidth=3,color='g')
         axes[0].plot(self.relgrowthrate,label="Relative growth")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
         axes[1].plot(self.active,label='Active cases')
