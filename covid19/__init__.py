@@ -331,7 +331,7 @@ if __name__=="__main__":
     a.download()
     a.figtype='png'
     #print(a.countrydata['Finland'].active)
-    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
+    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Austria', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
     #a.countries=['Finland' ]
     #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
     a.plot()
