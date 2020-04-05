@@ -152,7 +152,11 @@ class covid19(thesdk):
         cases=kwargs.get('type','Confirmed')
         fid=open(self.databasefiles[cases],'r')
         readd = pd.read_csv(fid,dtype=object,sep=',',header=None)
-        dat=readd[readd[1].str.match(country)]
+        readd=readd[(readd[1].str.match(country))]
+        if country is not 'China':
+            dat=readd[~(readd[0].str.match('',na=False))]
+        else:
+            dat=readd
         dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
         return dat
 
