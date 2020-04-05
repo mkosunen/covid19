@@ -23,6 +23,7 @@ from thesdk import *
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import pdb
 
 class covid19(thesdk):
     @property
@@ -130,7 +131,7 @@ class covid19(thesdk):
 
     @property
     def databasefiles(self): 
-        self._databasefiles={ key : self.entitypath+'/database/'+key+'.csv' for key in [ 'Confirmed', 'Recovered', 'Deaths' ] }
+        self._databasefiles={ key : self.entitypath+'/database/'+key+'.csv' for key in [ 'Confirmed', 'Deaths', 'Finland_Confirmed' ] }
         return self._databasefiles
 
     @property
@@ -139,12 +140,12 @@ class covid19(thesdk):
     def download(self):
         '''Downloads the case databases'''
         for key,value in self.databasefiles.items():
-            #command= 'wget "https://data.humdata.org/hxlproxy/api/data-preview.csv?url=https%3A%2F%2Fraw.githubusercontent.com%2FCSSEGISandData%2FCOVID-19%2Fmaster
-            #%2Fcsse_covid_19_data%2Fcsse_covid_19_time_series%2Ftime_series_19-covid-'+key+'.csv&filename=time_series_2019-ncov-'+key+'.csv" -O '+ value
-            if key is not 'Recovered' :
+            if key is not 'Finland_Confirmed' :
                 command= 'wget "https://raw.github.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
-                self.print_log(type='I', msg='Executing %s \n' %(command))
-                subprocess.check_output(command, shell=True);
+            elif key is 'Finland_Confirmed':
+                command= 'wget "https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?column=dateweek2020010120201231-443702L" -O '+ value
+            self.print_log(type='I', msg='Executing %s \n' %(command))
+            subprocess.check_output(command, shell=True);
 
     def read(self,**kwargs):
         ''' Read by country '''
@@ -153,11 +154,22 @@ class covid19(thesdk):
         fid=open(self.databasefiles[cases],'r')
         readd = pd.read_csv(fid,dtype=object,sep=',',header=None)
         readd=readd[(readd[1].str.match(country))]
+        #if country is 'Finland' and cases is 'Confirmed':
+        #    fid=open(self.databasefiles['Finland_Confirmed'],'r')
+        #    readd = pd.read_csv(fid,dtype=object,sep=';').fillna('0')
+        #    readd=readd.set_index('Aika')
+        #    enddate=str((pd.datetime.now()-pd.Timedelta(days=1)).date())
+        #    dat=np.array(readd.loc['2020-01-22':enddate].transpose().astype('int'))
+        #    #dat=np.cumsum(np.r_[0, dat[0,:]])
+        #    dat=np.cumsum(dat[0,:])
+        #    fid.close()
         if country is not 'China':
             dat=readd[~(readd[0].str.match('',na=False))]
+            dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
         else:
             dat=readd
-        dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
+            dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
+        fid.close()
         return dat
 
 class country(covid19):
@@ -339,6 +351,7 @@ if __name__=="__main__":
     #a.countries=['Finland' ]
     #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
     a.plot()
+    #a.read_finland()
     #a.plot_estimated_recovery_times()
 
     input()
