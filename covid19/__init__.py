@@ -99,7 +99,7 @@ class covid19(thesdk):
             val.figtype=self.figtype
             axes[0].plot(val.relgrowthratefive,label=val.name,linewidth=2)
             axes[1].plot(val.active,label=val.name,linewidth=2)
-            axes[0].set_ylabel("Relative growth\n5-day avg", **hfont,fontsize=18);
+            axes[0].set_ylabel("Relative increase\n5-day avg", **hfont,fontsize=18);
             axes[1].set_ylabel('Active cases\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
             axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
             axes[0].set_xlim(0,val.active.size-1)
@@ -141,6 +141,7 @@ class covid19(thesdk):
         '''Downloads the case databases'''
         for key,value in self.databasefiles.items():
             if key is not 'Finland_Confirmed' :
+                #command= 'wget "https://raw.github.com/mkosunen/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
                 command= 'wget "https://raw.github.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
             elif key is 'Finland_Confirmed':
                 command= 'wget "https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?column=dateweek2020010120201231-443702L" -O '+ value
@@ -302,20 +303,20 @@ class country(covid19):
         figure,axes = plt.subplots(4,1,sharex=False,figsize=(6,10))
         refline=np.ones(list(self.countrydata.values())[0].relgrowthrate.size)*self.declinelevel
         #axes[0].plot(refline,linewidth=3,color='g')
-        axes[0].plot(self.relgrowthrate,label="Relative growth")
+        axes[0].plot(self.relgrowthrate,label="Relative increrase")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
         axes[1].plot(self.active,label='Active cases')
         axes[2].plot([i for i in range(-self.recovery_time+1,1)],self.growth[-self.recovery_time:],label='Growth')
-        axes[3].plot([i for i in range(-self.recovery_time+1,1)],self.relgrowthrate[-self.recovery_time:],label='Relative Growth')
+        axes[3].plot([i for i in range(-self.recovery_time+1,1)],self.relgrowthrate[-self.recovery_time:],label='Relative increase')
         axes[1].axvline(self.active.shape[0]-self.recovery_time,linestyle='dashed', color='c',label='Recovery limit')
         axes[0].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
-        axes[0].set_ylabel('Relative growth', **hfont,fontsize=18);
+        axes[0].set_ylabel('Relative increase', **hfont,fontsize=18);
         axes[1].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
         axes[1].set_ylabel('Active cases\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[2].set_xlabel('Active period', **hfont,fontsize=18);
         axes[2].set_ylabel('Daily growth\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[3].set_xlabel('Active period', **hfont,fontsize=18);
-        axes[3].set_ylabel('Relative growth\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
+        axes[3].set_ylabel('Relative increase\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[0].legend()
         axes[1].legend()
         axes[0].set_xlim(0,self.active.size-1)
@@ -346,6 +347,7 @@ if __name__=="__main__":
     a=covid19()
     a.download()
     a.figtype='png'
+    #a.figtype='eps'
     #print(a.countrydata['Finland'].active)
     a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Austria', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
     #a.countries=['Finland' ]
