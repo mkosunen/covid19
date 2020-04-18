@@ -217,7 +217,7 @@ class country(covid19):
 
     @property
     def relgrowthrate(self):
-        prevact=np.r_[0,self.active[0:-1]]
+        prevact=np.r_[0,self.active[0:-2]]
         zs=np.where(prevact==0)
         relact=prevact
         relact[zs]=1
@@ -227,7 +227,7 @@ class country(covid19):
 
     @property
     def relgrowthratefive(self):
-        prevact=np.r_[0,self.active[0:-1]]
+        prevact=np.r_[0,self.active[0:-2]]
         zs=np.where(prevact==0)
         relact=prevact
         relact[zs]=1
