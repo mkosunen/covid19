@@ -20,6 +20,7 @@ if not (os.path.abspath('../../thesdk') in sys.path):
 import subprocess
 
 from thesdk import *
+from numpy.polynomial import Polynomial
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -307,8 +308,12 @@ class country(covid19):
         axes[0].plot(self.relgrowthratefive,label='5-day average')
         axes[1].plot(self.active,label='Active cases')
         axes[2].plot([i for i in range(-self.recovery_time+1,1)],self.growth[-self.recovery_time:],label='Growth')
-        axes[3].plot([i for i in range(-self.recovery_time+1,1)],self.relgrowthrate[-self.recovery_time:],label='Relative increase')
-        axes[3].plot([i for i in range(-self.recovery_time+1,1)],self.relgrowthratefive[-self.recovery_time:],label='5-day average')
+        #Do linear fit
+        time=np.arange(-self.recovery_time+1,1)
+        poly=Polynomial.fit(time, self.growth[-self.recovery_time:],1)
+        axes[2].plot(time,poly(time),label='Trend')
+        axes[3].plot(time,self.relgrowthrate[-self.recovery_time:],label='Relative increase')
+        axes[3].plot(time,self.relgrowthratefive[-self.recovery_time:],label='5-day average')
         axes[1].axvline(self.active.shape[0]-self.recovery_time,linestyle='dashed', color='c',label='Recovery limit')
         axes[0].set_xlabel('Days since Jan 20, 2020', **hfont,fontsize=18);
         axes[0].set_ylabel('Relative increase', **hfont,fontsize=18);
@@ -320,6 +325,7 @@ class country(covid19):
         axes[3].set_ylabel('Relative increase\n past %s d' %(self.recovery_time), **hfont,fontsize=18);
         axes[0].legend()
         axes[1].legend()
+        axes[2].legend()
         axes[3].legend()
         axes[0].set_xlim(0,self.active.size-1)
         axes[0].set_ylim(0,1)
