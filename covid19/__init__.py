@@ -311,7 +311,9 @@ class country(covid19):
         #Do linear fit
         time=np.arange(-self.recovery_time+1,1)
         poly=Polynomial.fit(time, self.growth[-self.recovery_time:],1)
-        axes[2].plot(time,poly(time),label='Trend')
+        k=poly.coef[1]
+        efficiency=(poly(time)[0]/poly(time)[-1])
+        axes[2].plot(time,poly(time),label='Trend, eff=%s' %('{0:.2f}'.format(efficiency)))
         axes[3].plot(time,self.relgrowthrate[-self.recovery_time:],label='Relative increase')
         axes[3].plot(time,self.relgrowthratefive[-self.recovery_time:],label='5-day average')
         axes[1].axvline(self.active.shape[0]-self.recovery_time,linestyle='dashed', color='c',label='Recovery limit')
