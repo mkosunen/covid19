@@ -307,12 +307,14 @@ class country(covid19):
         axes[0].plot(self.relgrowthrate,label="Relative increrase")
         axes[0].plot(self.relgrowthratefive,label='5-day average')
         axes[1].plot(self.active,label='Active cases')
-        axes[2].plot([i for i in range(-self.recovery_time+1,1)],self.growth[-self.recovery_time:],label='Growth')
+        
         #Do linear fit
         time=np.arange(-self.recovery_time+1,1)
         poly=Polynomial.fit(time, self.growth[-self.recovery_time:],1)
         k=poly.coef[1]
         efficiency=(poly(time)[0]/poly(time)[-1])
+
+        axes[2].plot(time,self.growth[-self.recovery_time:],label='Growth')
         axes[2].plot(time,poly(time),label='Trend, eff=%s' %('{0:.2f}'.format(efficiency)))
         axes[3].plot(time,self.relgrowthrate[-self.recovery_time:],label='Relative increase')
         axes[3].plot(time,self.relgrowthratefive[-self.recovery_time:],label='5-day average')
