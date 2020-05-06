@@ -141,10 +141,10 @@ class covid19(thesdk):
     def download(self):
         '''Downloads the case databases'''
         for key,value in self.databasefiles.items():
-            if key is not 'Finland_Confirmed' :
+            if key != 'Finland_Confirmed' :
                 #command= 'wget "https://raw.github.com/mkosunen/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
                 command= 'wget "https://raw.github.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
-            elif key is 'Finland_Confirmed':
+            elif key == 'Finland_Confirmed':
                 command= 'wget "https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?column=dateweek2020010120201231-443702L" -O '+ value
             self.print_log(type='I', msg='Executing %s \n' %(command))
             subprocess.check_output(command, shell=True);
@@ -155,7 +155,12 @@ class covid19(thesdk):
         cases=kwargs.get('type','Confirmed')
         fid=open(self.databasefiles[cases],'r')
         readd = pd.read_csv(fid,dtype=object,sep=',',header=None)
-        readd=readd[(readd[1].str.match(country))]
+
+        #Hong Kong is part of China
+        if country == 'Hong Kong':
+            readd=readd[(readd[0].str.match(r'Hong Kong',na=False))]
+        else:
+            readd=readd[(readd[1].str.match(country))]
         #if country is 'Finland' and cases is 'Confirmed':
         #    fid=open(self.databasefiles['Finland_Confirmed'],'r')
         #    readd = pd.read_csv(fid,dtype=object,sep=';').fillna('0')
@@ -165,7 +170,10 @@ class covid19(thesdk):
         #    #dat=np.cumsum(np.r_[0, dat[0,:]])
         #    dat=np.cumsum(dat[0,:])
         #    fid.close()
-        if country is not 'China':
+        if country == 'Hong Kong':
+            dat=readd
+            dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
+        elif country != 'China':
             dat=readd[~(readd[0].str.match('',na=False))]
             dat=np.sum(np.array(dat.values[:,4:].astype('int')),axis=0)
         else:
@@ -361,7 +369,7 @@ if __name__=="__main__":
     a.figtype='png'
     #a.figtype='eps'
     #print(a.countrydata['Finland'].active)
-    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Austria', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South"]
+    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Austria', 'Sweden', 'Denmark', 'Norway', 'US', 'China', "Korea, South", 'Hong Kong', "Taiwan"]
     #a.countries=['Finland' ]
     #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
     a.plot()
