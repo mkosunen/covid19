@@ -145,7 +145,8 @@ class covid19(thesdk):
                 #command= 'wget "https://raw.github.com/mkosunen/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
                 command= 'wget "https://raw.github.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_'+key.lower()+'_global.csv" -O '+ value
             elif key == 'Finland_Confirmed':
-                command= 'wget "https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?column=dateweek2020010120201231-443702L" -O '+ value
+                pass
+                #command= 'wget "https://sampo.thl.fi/pivot/prod/fi/epirapo/covid19case/fact_epirapo_covid19case.csv?column=dateweek2020010120201231-443702L" -O '+ value
             self.print_log(type='I', msg='Executing %s \n' %(command))
             subprocess.check_output(command, shell=True);
 
