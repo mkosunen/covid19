@@ -370,7 +370,7 @@ if __name__=="__main__":
     a.figtype='png'
     #a.figtype='eps'
     #print(a.countrydata['Finland'].active)
-    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Austria', 'Sweden', 'Denmark', 'Norway','Luxembourg', 'Czechia', 'US', 'China', "Korea, South", 'Hong Kong', "Taiwan"]
+    a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Austria', 'Sweden', 'Denmark', 'Norway','Luxembourg', 'Czechia', 'US', 'China', "Korea, South", 'Hong Kong', "Taiwan", "New Zealand"]
     #a.countries=['Finland' ]
     #a.countries=['Finland', 'Italy', 'Spain', 'France','Germany', 'Sweden', 'Denmark', 'Norway', 'China', "Korea, South"]
     a.plot()
